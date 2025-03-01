@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Administrar Productos</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* Estilo minimalista */
+    :root {
+      --primary: #5D7CE9;
+      --accent: #4C5FBF;
+      --dark: #2D3047;
+      --light: #F7F7F9;
+      --danger: #FF6B6B;
+      --success: #4ECDC4;
+      --gray: #E6E6E6;
+      --text: #333333;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--light);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 32px;
+      font-weight: 500;
+      margin-bottom: 40px;
+      text-align: center;
+      color: var(--dark);
+    }
+    
+    .navigation-button {
+      display: block;
+      width: 200px;
+      padding: 12px 24px;
+      margin: 0 auto 40px auto;
+      background: var(--primary);
+      color: white;
+      text-align: center;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      text-decoration: none;
+    }
+    
+    .navigation-button:hover {
+      background: var(--accent);
+    }
+    
+    /* Estilos para el formulario de agregar producto */
+    .product-form {
+      background: white;
+      padding: 32px;
+      margin: 0 auto 40px auto;
+      border-radius: 8px;
+      max-width: 800px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid var(--gray);
+      border-radius: 4px;
+      transition: border 0.2s ease;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    
+    .form-submit {
+      grid-column: 1 / -1;
+      padding: 12px;
+      margin-top: 16px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+    
+    .form-submit:hover {
+      opacity: 0.9;
+    }
+    
+    /* Estilos para la lista de productos */
+    .products-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .product-list {
+      list-style: none;
+    }
+    
+    .product-item {
+      background: white;
+      margin-bottom: 16px;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .product-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    .product-details {
+      flex: 1;
+    }
+    
+    .product-title {
+      font-weight: 600;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    
+    .product-description {
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .product-price {
+      font-weight: 500;
+      color: var(--primary);
+    }
+    
+    .product-code {
+      color: #999;
+      font-size: 14px;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .edit-button {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .edit-button:hover {
+      background: var(--accent);
+    }
+    
+    .delete-button {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .delete-button:hover {
+      opacity: 0.9;
+    }
+    
+    /* Estilos para el formulario de edición */
+    .edit-form {
+      margin-top: 16px;
+      background: var(--light);
+      padding: 16px;
+      border-radius: 4px;
+    }
+    
+    .edit-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    
+    .edit-form input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--gray);
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .edit-form-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .update-button {
+      flex: 1;
+      padding: 10px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .cancel-button {
+      flex: 1;
+      padding: 10px;
+      background: var(--gray);
+      color: var(--text);
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .empty-state {
+      text-align: center;
+      color: #888;
+      margin: 24px 0;
+    }
+  </style>
+</head>
+<body>
+  <button class="navigation-button" onclick="window.location.href='/'">Volver a la Tienda</button>
+
+  <h1>Administrar Productos</h1>
+
+  <!-- Formulario para agregar un producto -->
+  <form id="productForm" class="product-form">
+    <div class="form-grid">
+      <div class="form-group">
+        <input type="text" name="title" placeholder="Título" required>
+      </div>
+      <div class="form-group">
+        <input type="text" name="description" placeholder="Descripción" required>
+      </div>
+      <div class="form-group">
+        <input type="text" name="code" placeholder="Código" required>
+      </div>
+      <div class="form-group">
+        <input type="number" step="0.01" name="price" placeholder="Precio" required>
+      </div>
+      <div class="form-group">
+        <input type="number" name="stock" placeholder="Stock" required>
+      </div>
+      <div class="form-group">
+        <input type="text" name="category" placeholder="Categoría" required>
+      </div>
+      <div class="form-group">
+        <input type="text" name="thumbnails" placeholder="URL de Imagen" required>
+      </div>
+      <button type="submit" class="form-submit">Agregar Producto</button>
+    </div>
+  </form>
+
+  <!-- Lista de productos -->
+  <div class="products-container">
+    <ul id="productsList" class="product-list">
+      {{#each products}}
+        <li class="product-item" data-id="{{this.id}}">
+          <div class="product-info">
+            <div class="product-details">
+              <div class="product-title">{{this.title}}</div>
+              <div class="product-description">{{this.description}}</div>
+              <div class="product-price">${{this.price}}</div>
+              <div class="product-code">Código: {{this.code}}</div>
+            </div>
+            <div class="button-group">
+              <button class="button edit-button" data-id="{{this.id}}">Editar</button>
+              <button class="button delete-button" data-id="{{this.id}}">Eliminar</button>
+            </div>
+          </div>
+        </li>
+      {{/each}}
+    </ul>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentProducts = [];
+
+    function renderProducts(products) {
+      currentProducts = products;
+      const productsList = document.getElementById('productsList');
+      
+      if (products.length === 0) {
+        productsList.innerHTML = '<p class="empty-state">No hay productos disponibles.</p>';
+        return;
+      }
+      
+      productsList.innerHTML = '';
+      products.forEach(product => {
+        const li = document.createElement('li');
+        li.className = 'product-item';
+        li.setAttribute('data-id', product.id);
+        li.innerHTML = `
+          <div class="product-info">
+            <div class="product-details">
+              <div class="product-title">${product.title}</div>
+              <div class="product-description">${product.description}</div>
+              <div class="product-price">$${product.price}</div>
+              <div class="product-code">Código: ${product.code}</div>
+            </div>
+            <div class="button-group">
+              <button class="button edit-button" data-id="${product.id}">Editar</button>
+              <button class="button delete-button" data-id="${product.id}">Eliminar</button>
+            </div>
+          </div>
+        `;
+        productsList.appendChild(li);
+      });
+    }
+
+    socket.on('updateProducts', products => {
+      renderProducts(products);
+    });
+
+    const productForm = document.getElementById('productForm');
+    productForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const formData = new FormData(productForm);
+      const productData = {};
+      formData.forEach((value, key) => {
+        productData[key] = value;
+      });
+      productData.price = parseFloat(productData.price);
+      productData.stock = parseInt(productData.stock, 10);
+      productData.thumbnails = [productData.thumbnails];
+      productData.status = true;
+      socket.emit('addProduct', productData);
+      productForm.reset();
+    });
+
+    document.getElementById('productsList').addEventListener('click', e => {
+      const target = e.target;
+      
+      if (target.classList.contains('delete-button')) {
+        const productId = parseInt(target.getAttribute('data-id'));
+        if (confirm('¿Estás seguro de eliminar este producto?')) {
+          socket.emit('deleteProduct', productId);
+        }
+      } 
+      
+      else if (target.classList.contains('edit-button')) {
+        const productId = parseInt(target.getAttribute('data-id'));
+        const product = currentProducts.find(p => p.id === productId);
+        const productItem = target.closest('.product-item');
+        
+        // Verificar si ya existe un formulario de edición
+        if (productItem.querySelector('.edit-form')) return;
+        
+        const editForm = document.createElement('form');
+        editForm.className = 'edit-form';
+        editForm.innerHTML = `
+          <div class="edit-form-grid">
+            <input type="text" name="code" value="${product.code}" placeholder="Código" required>
+            <input type="text" name="title" value="${product.title}" placeholder="Título" required>
+            <input type="text" name="description" value="${product.description}" placeholder="Descripción" required>
+            <input type="number" step="0.01" name="price" value="${product.price}" placeholder="Precio" required>
+            <input type="number" name="stock" value="${product.stock}" placeholder="Stock" required>
+            <div class="edit-form-actions">
+              <button type="submit" class="update-button">Actualizar</button>
+              <button type="button" class="cancel-button">Cancelar</button>
+            </div>
+          </div>
+        `;
+        
+        productItem.appendChild(editForm);
+        
+        editForm.querySelector('.cancel-button').addEventListener('click', () => {
+          editForm.remove();
+        });
+        
+        editForm.addEventListener('submit', e => {
+          e.preventDefault();
+          const formData = new FormData(editForm);
+          const updatedData = { id: productId };
+          
+          formData.forEach((value, key) => {
+            updatedData[key] = value;
+          });
+          
+          updatedData.price = parseFloat(updatedData.price);
+          updatedData.stock = parseInt(updatedData.stock, 10);
+          
+          socket.emit('updateProduct', updatedData);
+          editForm.remove();
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
+

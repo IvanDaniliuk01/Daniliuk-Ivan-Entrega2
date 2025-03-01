@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Home - Tienda</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    /* Estilo minimalista */
+    :root {
+      --primary: #5D7CE9;
+      --accent: #4C5FBF;
+      --dark: #2D3047;
+      --light: #F7F7F9;
+      --danger: #FF6B6B;
+      --success: #4ECDC4;
+      --gray: #E6E6E6;
+      --text: #333333;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--light);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 32px;
+      font-weight: 500;
+      margin-bottom: 40px;
+      text-align: center;
+      color: var(--dark);
+    }
+    
+    h2 {
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: var(--dark);
+    }
+    
+    .navigation-button {
+      display: block;
+      width: 250px;
+      padding: 12px 24px;
+      margin: 40px auto;
+      background: var(--primary);
+      color: white;
+      text-align: center;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    
+    .navigation-button:hover {
+      background: var(--accent);
+    }
+    
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 40px;
+      margin-top: 40px;
+    }
+    
+    .section {
+      background: white;
+      padding: 32px;
+      border-radius: 8px;
+    }
+    
+    /* Estilos para productos */
+    .product-item, .cart-item, .search-item {
+      padding: 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gray);
+    }
+    
+    .product-item:last-child, .cart-item:last-child, .search-item:last-child {
+      border-bottom: none;
+    }
+    
+    /* Estilos para botones */
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .primary-button {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .primary-button:hover {
+      background: var(--accent);
+    }
+    
+    .danger-button {
+      background: var(--danger);
+      color: white;
+    }
+    
+    .danger-button:hover {
+      opacity: 0.9;
+    }
+    
+    .success-button {
+      background: var(--success);
+      color: white;
+    }
+    
+    .success-button:hover {
+      opacity: 0.9;
+    }
+    
+    /* Formulario de búsqueda */
+    #searchForm {
+      display: flex;
+      margin-bottom: 24px;
+    }
+    
+    #searchForm input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid var(--gray);
+      border-radius: 4px 0 0 4px;
+      outline: none;
+    }
+    
+    #searchForm input[type="text"]:focus {
+      border-color: var(--primary);
+    }
+    
+    #searchForm button {
+      padding: 12px 16px;
+      border-radius: 0px;
+      font-size: 16px;
+    }
+
+    #resetSearchBtn {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: 2px solid #e74c3c;
+      background: #e74c3c;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    #resetSearchBtn:hover {
+      background: #c0392b;
+      border-color: #c0392b;
+    }
+    
+    /* Acciones para productos y carrito */
+    .product-actions, .cart-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    #createCartBtn {
+      font-size: 16px;
+      border-radius: 0px;
+      background-color: coral;
+    }
+    #createCartBtn:hover {
+      background: #c0392b;
+    }
+    
+    .decrementBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gray);
+      color: var(--text);
+      font-weight: bold;
+    }
+    
+    .decrementBtn:hover {
+      background: var(--dark);
+      color: white;
+    }
+    
+    .empty-state {
+      text-align: center;
+      color: #888;
+      margin: 24px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tienda</h1>
+
+  <button class="navigation-button" onclick="window.location.href='/realtimeproducts'">
+    Administrar Productos
+  </button>
+  
+  <div class="container">
+    <!-- Sección de productos -->
+    <div class="section" id="productsSection">
+      <h2>Productos</h2>
+      <!-- Formulario de búsqueda -->
+      <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Buscar producto" required>
+        <button type="submit" class="primary-button">Buscar</button>
+        <button type="button" id="resetSearchBtn">Reiniciar búsqueda</button>
+      </form>
+      <!-- Resultados de búsqueda -->
+      <div id="searchResult"></div>
+      <!-- Lista completa de productos -->
+      <div id="productsList">
+        <!-- Se mostrarán los productos actualizados en tiempo real -->
+      </div>
+    </div>
+    
+    <!-- Sección del carrito -->
+    <div class="section" id="cartSection">
+      <h2>Mi Carrito</h2>
+      <button id="createCartBtn" class="success-button" style="margin-bottom: 24px;">Crear Carrito</button>
+      <div id="cartDetails">
+        <p class="empty-state">No hay carrito creado.</p>
+      </div>
+      <button id="finalizeCartBtn" class="danger-button" style="display:none; margin-top:24px; width:100%;">
+        Finalizar Compra
+      </button>
+    </div>
+  </div>
+  
+  <script>
+    const socket = io();
+    let currentProducts = [];
+    let currentCart = null;
+    
+    // Función para renderizar el listado completo de productos
+    function renderProducts(products) {
+      currentProducts = products;
+      const productsList = document.getElementById('productsList');
+      
+      if (products.length === 0) {
+        productsList.innerHTML = '<p class="empty-state">No hay productos disponibles.</p>';
+        return;
+      }
+      
+      productsList.innerHTML = '';
+      products.forEach(product => {
+        const div = document.createElement('div');
+        div.classList.add('product-item');
+        div.innerHTML = `
+          <div>
+            <strong>${product.title}</strong>
+            <p>${product.description}</p>
+            <p>$${product.price}</p>
+          </div>
+          <button class="addToCartBtn primary-button" data-id="${product.id}">Agregar</button>
+        `;
+        productsList.appendChild(div);
+      });
+    }
+    
+    // Función para renderizar el carrito
+    function renderCart(cart) {
+      const cartDetails = document.getElementById('cartDetails');
+      const finalizeBtn = document.getElementById('finalizeCartBtn');
+
+      // Si el carrito ha sido finalizado, mostramos mensaje y reiniciamos la variable currentCart
+      if (cart && cart.finalized) {
+        cartDetails.innerHTML = '<p class="empty-state">El carrito ha sido finalizado.</p>';
+        finalizeBtn.style.display = 'none';
+        currentCart = null; // reiniciamos para permitir crear uno nuevo
+        return;
+      }
+
+      // Si no hay carrito o está vacío
+      if (!cart || !cart.products || cart.products.length === 0) {
+        cartDetails.innerHTML = '<p class="empty-state">El carrito está vacío.</p>';
+        finalizeBtn.style.display = 'none';
+        return;
+      }
+
+      // Si hay carrito y productos, mostramos los productos y el botón de finalizar
+      cartDetails.innerHTML = '';
+      cart.products.forEach(item => {
+        const div = document.createElement('div');
+        div.classList.add('cart-item');
+        const product = currentProducts.find(p => p.id === item.product);
+        const productName = product ? product.title : 'Producto desconocido';
+        div.innerHTML = `
+          <div>
+            <strong>${productName}</strong>
+            <p>Cantidad: ${item.quantity}</p>
+          </div>
+          <button class="decrementBtn" data-id="${item.product}">Disminuir</button>
+        `;
+        cartDetails.appendChild(div);
+      });
+      
+      finalizeBtn.style.display = 'block';
+    }
+    
+    // Función para renderizar resultados de búsqueda
+    function renderSearchResults(results) {
+      const searchResult = document.getElementById('searchResult');
+      searchResult.innerHTML = '';
+      
+      if (results.length === 0) {
+        searchResult.innerHTML = '<p class="empty-state">No se encontraron productos.</p>';
+        return;
+      }
+      
+      results.forEach(product => {
+        const div = document.createElement('div');
+        div.classList.add('search-item');
+        div.innerHTML = `
+          <div>
+            <strong>${product.title}</strong>
+            <p>${product.description}</p>
+            <p>$${product.price}</p>
+          </div>
+          <button class="addToCartFromSearch primary-button" data-id="${product.id}">Agregar</button>
+        `;
+        searchResult.appendChild(div);
+      });
+    }
+    
+    // Socket.io: actualizar productos en tiempo real
+    socket.on('updateProducts', products => {
+      renderProducts(products);
+    });
+    
+    // Socket.io: actualizar carrito
+    socket.on('cartCreated', cart => {
+      currentCart = cart;
+      renderCart(cart);
+    });
+    
+    socket.on('cartUpdated', cart => {
+      currentCart = cart;
+      renderCart(cart);
+    });
+    
+    // Crear carrito
+    document.getElementById('createCartBtn').addEventListener('click', () => {
+      socket.emit('createCart');
+    });
+    
+    // Delegar clic en "Agregar al carrito"
+    document.getElementById('productsList').addEventListener('click', (e) => {
+      if (e.target.classList.contains('addToCartBtn')) {
+        const productId = parseInt(e.target.getAttribute('data-id'));
+        if (!currentCart) {
+          alert('Por favor, crea primero un carrito.');
+          return;
+        }
+        socket.emit('addToCart', { cartId: currentCart.id, productId });
+      }
+    });
+
+    // Delegar clic en "Agregar al carrito" desde resultados de búsqueda
+    document.getElementById('searchResult').addEventListener('click', (e) => {
+      if (e.target.classList.contains('addToCartFromSearch')) {
+        const productId = parseInt(e.target.getAttribute('data-id'));
+        if (!currentCart) {
+          alert('Por favor, crea primero un carrito.');
+          return;
+        }
+        socket.emit('addToCart', { cartId: currentCart.id, productId });
+      }
+    });
+
+    // Delegar clic en el botón de decrementar cantidad
+    document.getElementById('cartDetails').addEventListener('click', (e) => {
+      if (e.target.classList.contains('decrementBtn')) {
+        const productId = parseInt(e.target.getAttribute('data-id'));
+        if (!currentCart) {
+          alert('No hay carrito creado.');
+          return;
+        }
+        socket.emit('decrementFromCart', { cartId: currentCart.id, productId });
+      }
+    });
+    
+    // Manejar clic en el botón de finalizar carrito
+    document.getElementById('finalizeCartBtn').addEventListener('click', () => {
+      if (!currentCart) {
+        alert('No hay carrito creado.');
+        return;
+      }
+      // Emisión vía Socket.io para finalizar el carrito
+      socket.emit('finalizeCart', { cartId: currentCart.id });
+    });
+
+    // Función para buscar productos por nombre usando fetch
+    async function searchProductByName(name) {
+      try {
+        const res = await fetch('/api/products?name=' + encodeURIComponent(name));
+        const data = await res.json();
+        return data.products;
+      } catch (error) {
+        console.error('Error en búsqueda:', error);
+        return [];
+      }
+    }
+    
+    // Manejar el envío del formulario de búsqueda
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('searchInput').value;
+      try {
+        const res = await fetch('/api/products?name=' + encodeURIComponent(name));
+        const data = await res.json();
+        renderSearchResults(data.products);
+      } catch (error) {
+        console.error('Error en búsqueda:', error);
+      }
+    });
+
+    // Listener para reiniciar la búsqueda
+    document.getElementById('resetSearchBtn').addEventListener('click', () => {
+      // Limpiar el input
+      document.getElementById('searchInput').value = "";
+      // Limpiar los resultados de búsqueda
+      document.getElementById('searchResult').innerHTML = "";
+    });
+
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "title": "Producto 1",
+    "description": "Descripcion del producto 1",
+    "code": "COO1",
+    "price": 65.32,
+    "status": true,
+    "stock": 10,
+    "category": "Categoria1",
+    "thumbnails": [
+      "ruta/imagen1.png"
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Producto 2",
+    "description": "Descripcion del producto 2",
+    "code": "COO2",
+    "price": 54.32,
+    "status": true,
+    "stock": 120,
+    "category": "Categoria2",
+    "thumbnails": [
+      "src/img/img2.jpg"
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Producto 3",
+    "description": "Descripcion del producto 3",
+    "code": "COO3",
+    "price": 64,
+    "status": true,
+    "stock": 40,
+    "category": "Categoria3",
+    "thumbnails": [
+      "src/img/img3.jpg"
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Producto 4",
+    "description": "Descripcion del producto 4",
+    "code": "COO4",
+    "price": 87,
+    "status": true,
+    "stock": 23,
+    "category": "Categoria4",
+    "thumbnails": [
+      "src/img/img4.jpg"
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Producto 5",
+    "description": "Descripcion del producto 5",
+    "code": "COO5",
+    "price": 87.21,
+    "status": true,
+    "stock": 95,
+    "category": "Categoria1",
+    "thumbnails": [
+      "src/img/img5.jpg"
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Producto 6",
+    "description": "Descripcion del producto 6",
+    "code": "COO6",
+    "price": 54.21,
+    "status": true,
+    "stock": 98,
+    "category": "Categoria2",
+    "thumbnails": [
+      "src/img/img6.jpg"
+    ]
+  }
+]
